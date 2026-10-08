@@ -804,10 +804,12 @@ function renderFixtures(){
   if(!db.fixtures.length){el.innerHTML='<p class="muted">No fixtures yet.</p>';return;}
   db.fixtures.forEach(f=>{
     const ta=teamById(f.a),tb=teamById(f.b);if(!ta||!tb)return;
-    const head=(f.matchNo?`M${f.matchNo} · `:'')+(f.group?`Grp ${f.group} · `:'')+`${ta.name} vs ${tb.name}`;
+    const grpTag=(f.group&&f.group!=='QF')?`Grp ${f.group} · `:'';
+    const head=`${fixtureLabel(f)} · ${grpTag}${ta.name} vs ${tb.name}`;
     const sub=[f.day,f.date,f.time,f.venue].filter(Boolean).join(' · ')||'—';
+    const extra=[f.ump?`Umpires: ${f.ump}`:'',f.sup?`Supervisor: ${f.sup}`:''].filter(Boolean).join(' · ');
     const d=document.createElement('div');d.className='list-item';
-    d.innerHTML=`<div class="grow"><b>${head}</b><br><small>${sub}</small></div><button class="btn sm ghost danger">✕</button>`;
+    d.innerHTML=`<div class="grow"><b>${head}</b><br><small>${sub}</small>${extra?`<br><small class="muted">${extra}</small>`:''}</div><button class="btn sm ghost danger">✕</button>`;
     d.querySelector('.danger').onclick=()=>{db.fixtures=db.fixtures.filter(x=>x.id!==f.id);saveDB();renderFixtures();renderNewMatch();};
     el.appendChild(d);
   });
@@ -848,14 +850,14 @@ function renderNewMatch(){
   if(db.teams.length<2){el.innerHTML='<p class="muted">Add at least two teams (and squads) first.</p>';return;}
   const opts=sel=>db.teams.map(t=>`<option value="${t.id}">${t.name} (${t.players.length})</option>`).join('');
   const fxSorted=[...db.fixtures].sort((a,b)=>(a.matchNo||999)-(b.matchNo||999));
-  const fxOpts=fxSorted.map(f=>{const a=teamById(f.a),b=teamById(f.b);return a&&b?`<option value="${f.id}">${f.matchNo?'M'+f.matchNo+' · ':''}${a.name} vs ${b.name}${f.day?' · '+f.day:''}</option>`:'';}).join('');
+  const fxOpts=fxSorted.map(f=>{const a=teamById(f.a),b=teamById(f.b);return a&&b?`<option value="${f.id}">${fixtureLabel(f)} · ${a.name} vs ${b.name}${f.day?' · '+f.day:''}</option>`:'';}).join('');
   el.innerHTML=`
     ${fxOpts?`<label class="fld"><span>Load from fixture (optional)</span><select id="mFixture"><option value="">— pick teams manually —</option>${fxOpts}</select></label>`:''}
     <div class="row"><label class="fld grow"><span>Team A</span><select id="mTeamA"><option value="">Select</option>${opts()}</select></label>
     <label class="fld grow"><span>Team B</span><select id="mTeamB"><option value="">Select</option>${opts()}</select></label></div>
     <div id="mConfig"></div>`;
   const fx=document.getElementById('mFixture');
-  if(fx)fx.onchange=e=>{const f=db.fixtures.find(x=>x.id===e.target.value);if(!f)return;setup.teamAId=f.a;setup.teamBId=f.b;setup.date=f.date||setup.date;setup.venue=f.venue||'';setup.xi={};setup.battingFirstId='';renderNewMatch();};
+  if(fx)fx.onchange=e=>{const f=db.fixtures.find(x=>x.id===e.target.value);if(!f)return;setup.teamAId=f.a;setup.teamBId=f.b;setup.date=f.date||setup.date;setup.venue=f.venue||'';setup.xi={};setup.battingFirstId='';if(f.ump){setup.officials.ump1Club=f.ump;setup.officials.ump2Club=f.ump;setup.officials.ump1Name='';setup.officials.ump2Name='';}renderNewMatch();};
   const a=document.getElementById('mTeamA'),b=document.getElementById('mTeamB');
   a.value=setup.teamAId;b.value=setup.teamBId;
   a.onchange=e=>{setup.teamAId=e.target.value;setup.xi={};setup.battingFirstId='';renderMatchConfig();};
@@ -1711,14 +1713,14 @@ const SEED_TEAMS=[
 ["Youngstar",["Abdur Rehman","Asif Abrar","Asim Mubeen","Atif Shehzad","Faiz Ul Haq","Habib Ur Rahman","Irfan Ikram","Irfan Ul Haq","Javed Ahmed","Khuram Shahzad Bhatti","M Saif","M Adil Ashrif","M Asim Arshad","M Umer Cheema","Muhammad Naeem","Qamar Ali Riasat Ali","Saif Ul Islam Butt","Shezan Sikandar","Waqar Azeem","Zaib Ali"]],
 ["Shaheen XI CC",["Ahmad Gil","Amir Shaheen Xi","Amjad Khan","Arquam Maman","Asim Riyadh","bilal ahmad","Danish Khan","Fakhar Fareed","Ghazanfar Ali Muhammad Nazam","Haroon Hanif Muhammad Hanif","Hussnain Aziz Abdul Aziz","Ibrar Khan","Majid Jahangir","Manazir Shafique","Nayar Jamil Jamil Ahmad","Sajjad Ahmad","Shoaib Faisal","Sujith Kumar","Umair Shaheen","Umar Shaheen"]],
 ["Nokia CC",["Abid Hussain Muhammad Ashraf","ADEEL AHMED NASEER AHMAD","Ahsan Talib Ghulam Hussain","Ali Raza","Atif Ali Muhammad Sadiq","Basharat Ali Muhammad Ramzan","Bilal Ahmed Faiz Ahmed","Ishtiaq Ahmed","Malik Ijaz Hussain Muhammad","Md Osman Goni","Mridul Hasan","Muhammad Majid","Muhammad Noman Muhammad Boota","Muhammad Zain Anwar Muhammad Hussain","Musawar Ghulam Rasool","Mussa Umar Khan","SABBIR HUSSAIN MD ABU","Umer Siddique Muhammad Siddique","Waseem Shabbir Muhammad Shabbir","Zaheer Abbas Muhammad yaqoob","Brijesh Vishwakarma","M Azzan Sarwar"]],
-["Faisalabad Kings CC",["Abdul Hafeez","Adnan Ayub","Amir Ali Riasat Ali","Arslan Afzal Muhammad Afzal","Bilawal Hussain Khadim Hussain","Hamza Ali","Khalid Hussain Shah Zaman","Khawaja Haroon Rasheed k Rasheed","M Aqil Gul Khan","Malik Haris","Moazzam Saleem","Muhammad Affnan","Muhammad Suleman","Muhammad Junaid Khan Naseem Gul","MUHAMMAD Usman MUHAMMAD Bashir","Qamar Zaman","Shahab Khan","Tahir Rasheed","TAIYYAB MAHAMMAD","Tanveer Shah"]],
+["Aseer Kings",["Abdul Hafeez","Adnan Ayub","Amir Ali Riasat Ali","Arslan Afzal Muhammad Afzal","Bilawal Hussain Khadim Hussain","Hamza Ali","Khalid Hussain Shah Zaman","Khawaja Haroon Rasheed k Rasheed","M Aqil Gul Khan","Malik Haris","Moazzam Saleem","Muhammad Affnan","Muhammad Suleman","Muhammad Junaid Khan Naseem Gul","MUHAMMAD Usman MUHAMMAD Bashir","Qamar Zaman","Shahab Khan","Tahir Rasheed","TAIYYAB MAHAMMAD","Tanveer Shah"]],
 ["Hawks Cricket Club",["Ahsan Irfan","Ali Dastgeer","Ameer Hamza Ishtiaq Ahmad","Arslan Iftikhar","ARSLAN AHMAD MUHAMMAD AFZAL","Basit Ali","Hmmad Umar Umar Zada","Iftikhar Ullah","Imran AHMED NISAR Ahmad","Inzamam Ul Haq","Javed Sohrab","Khalid Zwaak Khan","Muhammad Arsalan","Qaisar Abbas Muhammad Hanif","Shakir Altaf","Tariq Hussain","Umair Altaf","Umair AHMED ABDUR RASHEED","Yasir Bilal Muhammad Anwar","Zia Ur Rahman"]],
 ["United Cricket Club",["Abdul Rehman Muhammad Bashir","Ahsan Zahoor","Ajay Mandal","Basit Majeed Pampori","Faheem Ul Hassan Qadri","Farhan Muhammad","Ghaffar Ali","Ismail Muhammad","Izhar Uddin Sarwar","Khalid United","Md. Dilshad Iqbal","Muahmmad Raiyan","Mubarak Ali","Muhammad Autif","Muhammad Sultan","Rizvan Saifi","Saheb Ali","Saiyyad Afjal","Waheem Hayat Khan"]],
 ["Dad Al Arab CC",["Abbas Khan","Ali Akbar Khan","ASIF KHAN","Faheem Younus","Farhad","Fayyaz Khan","Ghafar Ali","Javed Khan","M Shahzad","M Saleem Khan","M. Adeel Bhatti","Maqsood Dad","Muhammad Shoaib","Nouman Dad","Riaz Khan","Samar Greenstar","Shah Zar Khan","Suleman Khan","Syed Furqan","Syed Raza Abbas","M Yasin Boota","M Mughaira Khan"]],
-["Sialkot Shaheen CC",["Ajab Khan","Alman Shah","Asim Shar","Haris Aftab","Haseeb Ahmad","Khizar Ur Rahman","M Usman Ghani","M. Umair Ahmad","Mohsin Abbas","Mohsin Shafique","MOUHAMMAD SIDDIQUE","MUHAMMAD AKRAM MUHAMMAD HANIF","Obaid Ullah Shafiq","Qasim Ali","Sajid Baloch","saqib ali","Shakeel Nawaz Muhammad Nawaz","Syed Hassan Syed Hassan S. Hussain","TAHIR ABBAS","Zeeshan Ali Khan"]],
+["Eagle Stars",["Ajab Khan","Alman Shah","Asim Shar","Haris Aftab","Haseeb Ahmad","Khizar Ur Rahman","M Usman Ghani","M. Umair Ahmad","Mohsin Abbas","Mohsin Shafique","MOUHAMMAD SIDDIQUE","MUHAMMAD AKRAM MUHAMMAD HANIF","Obaid Ullah Shafiq","Qasim Ali","Sajid Baloch","saqib ali","Shakeel Nawaz Muhammad Nawaz","Syed Hassan Syed Hassan S. Hussain","TAHIR ABBAS","Zeeshan Ali Khan"]],
 ["KPK Star",["Abid Kpk","Akhtar Munir","Ali Said","Aziz Ullah","Dawood Kpkstr","Faruk KPK Star","Fayaz Kpkstr","Hamid Kpkstr","Javeed Kpkstr","M Aminul","Md Alaudin","Muhammad Hussain","Muhsin Khan","Mustafa Kpkstr","Najib KPK Star","Sami Khan","Sheikh Md Faisal","Umar KPK Star","Usman Kpkstr","Zarshad Kpkstr"]],
 ["Kpk Zalmi CC",["Abdullah Sher Bahadur","Ali Rahman","Amir Shirazi","Amjad Nabi","Asad Ali Khan Musafar Khan","Asghar Ali Khan","Kashif Zalmi","Lal Wahid","Majeed Ullah","Mazhar Ali","Muhammad Adil Muslim Khan","Mujahid Dost Khan","Naseer Babar","Rashid Zalmi","SADAQAT SHAH","Saeed Anwar","Salman Khan","Shahid Khan","Tajullah Zalmi","Waqas Kpk Xi"]],
-["Aqs Pepsi CC",["Afzal Pepsi","Ali Hassan Sadaqat","Amin Ul Haq Muhammad Zeb","Asad Mughal","Jawaad Maqsood","Maqsood Pepsi","Mudassir Iqbal","Muhammad Adil","Muhammad Asad","Muhammad Mubeen","Muhammad Noman","Muhammad Usman","Muhammad Asif Muhammad Riaz","Muhammad Munir Muhammad Bashir","Muhammad Rafique Muhammad Khan","Nadeem Abbass Ghulam Abbass","Rao Nasir","Rizwan Ahmad","Rizwan Amjad","Shahid Pepso"]]
+["Aqs Pepsi CC",["Afzal Pepsi","Ali Hassan Sadaqat","Amin Ul Haq Muhammad Zeb","Asad Mughal","Jawaad Maqsood","Maqsood Pepsi","Mudassir Iqbal","Muhammad Adil","Muhammad Asad","Muhammad Mubeen","Muhammad Noman","Muhammad Usman","Muhammad Asif Muhammad Riaz","Muhammad Munir Muhammad Bashir","Muhammad Rafique Muhammad Khan","Nadeem Abbass Ghulam Abbass","Rao Nasir","Rizwan Ahmad","Rizwan Amjad","Shahid Pepso","Omar Farooq"]]
 ];
 function seedTeams(){
   if(db.teams.length)return;
@@ -1727,45 +1729,53 @@ function seedTeams(){
 }
 
 /* ---- 1st Afzal Ghani group-stage fixtures (26 named matches; knockouts excluded until qualifiers known) ---- */
-const FX_NAME_MAP={'Nokia CC':'Nokia CC','Sialkot Stallions':'Sialkot Stallions CC','Dad Al Arab':'Dad Al Arab CC','Friends CC':'Friends CC','United CC':'United Cricket Club','Islamabad United':'Islamabad United CC','AQS Pepsi':'Aqs Pepsi CC','Youngstar':'Youngstar','KPK Zalmi':'Kpk Zalmi CC','KPK Star':'KPK Star','Sialkot Shaheen':'Sialkot Shaheen CC','Hawks CC':'Hawks Cricket Club','Faisalabad Kings':'Faisalabad Kings CC','Shaheen XI':'Shaheen XI CC'};
+const FX_NAME_MAP={'Nokia CC':'Nokia CC','Sialkot Stallions':'Sialkot Stallions CC','Dad Al Arab':'Dad Al Arab CC','Friends CC':'Friends CC','United CC':'United Cricket Club','Islamabad United':'Islamabad United CC','AQS Pepsi':'Aqs Pepsi CC','Youngstar':'Youngstar','KPK Zalmi':'Kpk Zalmi CC','KPK Star':'KPK Star','Eagle Stars':'Eagle Stars','Hawks CC':'Hawks Cricket Club','Aseer Kings':'Aseer Kings','Shaheen XI':'Shaheen XI CC'};
 const SCHEDULE=[
 [1,'Match Day 1','2026-08-21','ACL','7:30 AM','C','Nokia CC','Sialkot Stallions'],
 [2,'Match Day 1','2026-08-21','USG','7:30 AM','A','Dad Al Arab','Friends CC'],
 [3,'Match Day 1','2026-08-21','ACL','1:30 PM','A','United CC','Islamabad United'],
 [4,'Match Day 1','2026-08-21','USG','1:30 PM','B','AQS Pepsi','Youngstar'],
 [5,'Match Day 2','2026-08-28','ACL','7:30 AM','B','AQS Pepsi','KPK Zalmi'],
-[6,'Match Day 2','2026-08-28','USG','7:30 AM','B','KPK Star','Sialkot Shaheen'],
+[6,'Match Day 2','2026-08-28','USG','7:30 AM','B','KPK Star','Eagle Stars'],
 [7,'Match Day 2','2026-08-28','ACL','1:30 PM','A','Dad Al Arab','United CC'],
-[8,'Match Day 2','2026-08-28','USG','1:30 PM','C','Hawks CC','Faisalabad Kings'],
+[8,'Match Day 2','2026-08-28','USG','1:30 PM','C','Hawks CC','Aseer Kings'],
 [9,'Match Day 3','2026-09-04','ACL','7:30 AM','A','Friends CC','Islamabad United'],
 [10,'Match Day 3','2026-09-04','USG','7:30 AM','C','Nokia CC','Shaheen XI'],
 [11,'Match Day 3','2026-09-04','ACL','1:30 PM','C','Sialkot Stallions','Hawks CC'],
 [12,'Match Day 3','2026-09-04','USG','1:30 PM','B','Youngstar','KPK Star'],
 [13,'Match Day 4','2026-09-11','ACL','7:30 AM','A','Dad Al Arab','Islamabad United'],
-[14,'Match Day 4','2026-09-11','USG','7:30 AM','B','Sialkot Shaheen','KPK Zalmi'],
-[15,'Match Day 4','2026-09-11','ACL','1:30 PM','C','Faisalabad Kings','Shaheen XI'],
+[14,'Match Day 4','2026-09-11','USG','7:30 AM','B','Eagle Stars','KPK Zalmi'],
+[15,'Match Day 4','2026-09-11','ACL','1:30 PM','C','Aseer Kings','Shaheen XI'],
 [16,'Match Day 4','2026-09-11','USG','1:30 PM','C','Nokia CC','Hawks CC'],
 [17,'Match Day 5','2026-09-18','ACL','7:30 AM','A','Friends CC','United CC'],
 [18,'Match Day 5','2026-09-18','USG','7:30 AM','B','AQS Pepsi','KPK Star'],
-[19,'Match Day 5','2026-09-18','ACL','1:30 PM','B','Youngstar','Sialkot Shaheen'],
+[19,'Match Day 5','2026-09-18','ACL','1:30 PM','B','Youngstar','Eagle Stars'],
 [20,'Match Day 5','2026-09-18','USG','1:30 PM','C','Sialkot Stallions','Shaheen XI'],
-[21,'Match Day 6','2026-09-25','ACL','7:30 AM','B','AQS Pepsi','Sialkot Shaheen'],
+[21,'Match Day 6','2026-09-25','ACL','7:30 AM','B','AQS Pepsi','Eagle Stars'],
 [22,'Match Day 6','2026-09-25','USG','7:30 AM','B','KPK Star','KPK Zalmi'],
 [23,'Match Day 6','2026-09-25','ACL','1:30 PM','C','Hawks CC','Shaheen XI'],
-[24,'Match Day 6','2026-09-25','USG','1:30 PM','C','Sialkot Stallions','Faisalabad Kings'],
+[24,'Match Day 6','2026-09-25','USG','1:30 PM','C','Sialkot Stallions','Aseer Kings'],
 [25,'Match Day 7','2026-10-02','USG','1:30 PM','B','Youngstar','KPK Zalmi'],
-[26,'Match Day 7','2026-10-02','USG','1:30 PM','C','Nokia CC','Faisalabad Kings']
+[26,'Match Day 7','2026-10-02','USG','1:30 PM','C','Nokia CC','Aseer Kings'],
+// Quarterfinals — [no, day, iso, ground, time, group, team1, team2, umpiresClub, supervisor]
+[27,'Quarterfinal','2026-10-09','USG','7:30 AM','QF','Islamabad United CC','Aqs Pepsi CC','Youngstar','Muhammad Afzal'],
+[28,'Quarterfinal','2026-10-09','ACL','7:30 AM','QF','Eagle Stars','Aseer Kings','United Cricket Club','Malik Muhammad Riaz'],
+[29,'Quarterfinal','2026-10-09','USG','1:30 PM','QF','Nokia CC','Kpk Zalmi CC','Sialkot Stallions CC','Tariq Jutt'],
+[30,'Quarterfinal','2026-10-09','ACL','1:30 PM','QF','Hawks Cricket Club','Friends CC','Shaheen XI CC','Muhammad Riaz Chaudhry']
 ];
 function seedFixtures(){
   if(db.fixtures.length)return;
   const byName=n=>db.teams.find(t=>t.name===n);
-  SCHEDULE.forEach(([no,day,iso,ground,time,grp,s1,s2])=>{
+  SCHEDULE.forEach(([no,day,iso,ground,time,grp,s1,s2,ump,sup])=>{
     const t1=byName(FX_NAME_MAP[s1]||s1),t2=byName(FX_NAME_MAP[s2]||s2);
     if(!t1||!t2)return;
-    db.fixtures.push({id:uid(),a:t1.id,b:t2.id,date:iso,venue:ground,time,group:grp,day,matchNo:no});
+    const fx={id:uid(),a:t1.id,b:t2.id,date:iso,venue:ground,time,group:grp,day,matchNo:no};
+    if(ump)fx.ump=ump; if(sup)fx.sup=sup;
+    db.fixtures.push(fx);
   });
   saveDB();
 }
+function fixtureLabel(f){return f.group==='QF'?('QF'+(f.matchNo-26)):('M'+f.matchNo);}
 
 /* ================= INIT ================= */
 loadDB();seedTeams();seedFixtures();renderHome();
