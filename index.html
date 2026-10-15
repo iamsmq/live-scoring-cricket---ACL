@@ -1720,7 +1720,7 @@ const SEED_TEAMS=[
 ["Eagle Stars",["Ajab Khan","Alman Shah","Asim Shar","Haris Aftab","Haseeb Ahmad","Khizar Ur Rahman","M Usman Ghani","M. Umair Ahmad","Mohsin Abbas","Mohsin Shafique","MOUHAMMAD SIDDIQUE","MUHAMMAD AKRAM MUHAMMAD HANIF","Obaid Ullah Shafiq","Qasim Ali","Sajid Baloch","saqib ali","Shakeel Nawaz Muhammad Nawaz","Syed Hassan Syed Hassan S. Hussain","TAHIR ABBAS","Zeeshan Ali Khan"]],
 ["KPK Star",["Abid Kpk","Akhtar Munir","Ali Said","Aziz Ullah","Dawood Kpkstr","Faruk KPK Star","Fayaz Kpkstr","Hamid Kpkstr","Javeed Kpkstr","M Aminul","Md Alaudin","Muhammad Hussain","Muhsin Khan","Mustafa Kpkstr","Najib KPK Star","Sami Khan","Sheikh Md Faisal","Umar KPK Star","Usman Kpkstr","Zarshad Kpkstr"]],
 ["Kpk Zalmi CC",["Abdullah Sher Bahadur","Ali Rahman","Amir Shirazi","Amjad Nabi","Asad Ali Khan Musafar Khan","Asghar Ali Khan","Kashif Zalmi","Lal Wahid","Majeed Ullah","Mazhar Ali","Muhammad Adil Muslim Khan","Mujahid Dost Khan","Naseer Babar","Rashid Zalmi","SADAQAT SHAH","Saeed Anwar","Salman Khan","Shahid Khan","Tajullah Zalmi","Waqas Kpk Xi"]],
-["Aqs Pepsi CC",["Afzal Pepsi","Ali Hassan Sadaqat","Amin Ul Haq Muhammad Zeb","Asad Mughal","Jawaad Maqsood","Maqsood Pepsi","Mudassir Iqbal","Muhammad Adil","Muhammad Asad","Muhammad Mubeen","Muhammad Noman","Muhammad Usman","Muhammad Asif Muhammad Riaz","Muhammad Munir Muhammad Bashir","Muhammad Rafique Muhammad Khan","Nadeem Abbass Ghulam Abbass","Rao Nasir","Rizwan Ahmad","Rizwan Amjad","Shahid Pepso","Omar Farooq"]]
+["Aqs Pepsi CC",["Rao Nasir","Rizwan Amjad","Muhammad Rafique Muhammad Khan","Afzal Pepsi","Muhammad Munir Muhammad Bashir","Safdar Pepsi","Ali Hassan Sadaqat","Mudassir Iqbal","Amin Ul Haq Muhammad Zeb","Nadeem Abbass Ghulam Abbass","Muhammad Usman","Jawaad Maqsood","Muhammad Noman","Rizwan Ahmad","Asad Mughal","Muhammad Adil","Shahid Pepso","Muhammad Hussain","Umar Farooq"]]
 ];
 function seedTeams(){
   if(db.teams.length)return;
@@ -1761,7 +1761,10 @@ const SCHEDULE=[
 [27,'Quarterfinal','2026-10-09','USG','7:30 AM','QF','Islamabad United CC','Aqs Pepsi CC','Youngstar','Muhammad Afzal'],
 [28,'Quarterfinal','2026-10-09','ACL','7:30 AM','QF','Eagle Stars','Aseer Kings','United Cricket Club','Malik Muhammad Riaz'],
 [29,'Quarterfinal','2026-10-09','USG','1:30 PM','QF','Nokia CC','Kpk Zalmi CC','Sialkot Stallions CC','Tariq Jutt'],
-[30,'Quarterfinal','2026-10-09','ACL','1:30 PM','QF','Hawks Cricket Club','Friends CC','Shaheen XI CC','Muhammad Riaz Chaudhry']
+[30,'Quarterfinal','2026-10-09','ACL','1:30 PM','QF','Hawks Cricket Club','Friends CC','Shaheen XI CC','Muhammad Riaz Chaudhry'],
+// Semifinals — [no, day, iso, ground, time, group, team1, team2, umpiresClub, supervisor]
+[31,'Semifinal','','','','SF','Hawks Cricket Club','Aqs Pepsi CC','',''],
+[32,'Semifinal','','','','SF','Nokia CC','Eagle Stars','','']
 ];
 function seedFixtures(){
   if(db.fixtures.length)return;
@@ -1775,7 +1778,7 @@ function seedFixtures(){
   });
   saveDB();
 }
-function fixtureLabel(f){return f.group==='QF'?('QF'+(f.matchNo-26)):('M'+f.matchNo);}
+function fixtureLabel(f){return f.group==='QF'?('QF'+(f.matchNo-26)):f.group==='SF'?('SF'+(f.matchNo-30)):('M'+f.matchNo);}
 
 /* ================= INIT ================= */
 loadDB();seedTeams();seedFixtures();renderHome();
