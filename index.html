@@ -1753,7 +1753,8 @@ function renderRosterList(){
 }
 function openRoster(id){
   if(id){const r=loadRosters().find(x=>x.id===id);rosterDraft=r?JSON.parse(JSON.stringify(r)):null;}
-  if(!rosterDraft){rosterDraft={id:uid(),team:'',tournament:'',players:[],removed:[],captain:'',wk:'',manager:''};}
+  if(!rosterDraft){rosterDraft={id:uid(),team:'',tournament:'',players:[],removed:[],captain:'',wk:'',manager:'',customTeam:false};}
+  if(rosterDraft.customTeam===undefined)rosterDraft.customTeam=false;
   if(!rosterDraft.removed)rosterDraft.removed=[];
   if(rosterDraft.captain===undefined)rosterDraft.captain='';
   if(rosterDraft.wk===undefined)rosterDraft.wk='';
@@ -1762,6 +1763,22 @@ function openRoster(id){
 }
 /* When the side is chosen/changed, auto-load its registered squad (removable),
    and drop the previous side's untouched auto rows. */
+/* team dropdown change: an existing club (auto-loads squad), or "new team from scratch" */
+function onRosterTeamSelect(val){
+  const r=rosterDraft;
+  if(val==='__new__'){
+    const prev=r.team;syncRosterInputs();
+    r.customTeam=true;r.team='';
+    if(prev)r.players=r.players.filter(p=>!(p.auto&&p.srcTeam===prev&&!p.iqama&&!p.dob&&!p.mobile));
+    renderRosterEditor();return;
+  }
+  r.customTeam=false;setRosterTeam(val);
+}
+function setCustomTeamName(v){
+  const r=rosterDraft;syncRosterInputs();r.team=(v||'').trim();
+  r.players.forEach(p=>{p.team=r.team;});   // locked player-team column follows the new name
+  renderRosterEditor();
+}
 function setRosterTeam(newTeam){
   const r=rosterDraft;const prev=r.team;   // capture BEFORE sync overwrites it
   syncRosterInputs();r.team=newTeam;
@@ -1859,8 +1876,10 @@ function renderRosterEditor(){
   el.innerHTML=`<button class="btn sm ghost" id="rosterBack">&larr; Back to rosters</button>
     <div class="card" style="margin-top:10px">
       <h2 style="margin-bottom:10px">${r.players.length?'Edit roster':'New roster'}</h2>
-      <div class="row"><label class="fld grow"><span>Team (side being registered)</span><select id="rTeam">${rosterTeamOptions(r.team)}</select></label>
+      <div class="row"><label class="fld grow"><span>Team (side being registered)</span>
+        <select id="rTeam"><option value="">Select team</option>${db.teams.map(t=>`<option value="${esc2(t.name)}"${(!r.customTeam&&r.team===t.name)?' selected':''}>${esc2(t.name)}</option>`).join('')}<option value="__new__"${r.customTeam?' selected':''}>➕ New team (from scratch)</option></select></label>
       <label class="fld grow"><span>Tournament</span><input id="rTourn" value="${esc2(r.tournament)}" placeholder="e.g. 2nd Afzal Ghani Tournament"></label></div>
+      ${r.customTeam?`<label class="fld"><span>New team name</span><input id="rNewTeam" value="${esc2(r.team)}" placeholder="Enter the new team's name" autocapitalize="words"></label>`:''}
       <div class="row"><label class="fld grow"><span>Captain</span><select id="rCap">${nameOpts(r.captain)}</select></label>
       <label class="fld grow"><span>Wicket keeper</span><select id="rWk">${nameOpts(r.wk)}</select></label></div>
       <label class="fld"><span>Manager name</span><input id="rMgr" value="${esc2(r.manager)}" placeholder="Team manager"></label>
@@ -1875,7 +1894,8 @@ function renderRosterEditor(){
     <button class="btn primary block" id="rWa" style="margin-top:8px;background:#1f8a4c;border-color:#1f8a4c">Send on WhatsApp</button>`;
 
   document.getElementById('rosterBack').onclick=()=>{renderHome();show('screenHome');const b=document.querySelector('#homeTabs .btn[data-tab="rosters"]');if(b)openTab('rosters',b);};
-  document.getElementById('rTeam').onchange=e=>setRosterTeam(e.target.value);
+  document.getElementById('rTeam').onchange=e=>onRosterTeamSelect(e.target.value);
+  {const nt=document.getElementById('rNewTeam');if(nt)nt.onchange=e=>setCustomTeamName(e.target.value);}
   document.getElementById('rTourn').onchange=e=>{r.tournament=e.target.value.trim();};
   document.getElementById('rCap').onchange=e=>{r.captain=e.target.value;};
   document.getElementById('rWk').onchange=e=>{r.wk=e.target.value;};
@@ -1908,7 +1928,10 @@ function checkNewAdditions(){
 }
 function syncRosterInputs(){
   const r=rosterDraft;document.querySelectorAll('#screenRoster [data-f]').forEach(inp=>{const i=+inp.dataset.i,f=inp.dataset.f;if(r.players[i])r.players[i][f]=inp.value;});
-  const t=document.getElementById('rTeam'),tn=document.getElementById('rTourn');if(t)r.team=t.value;if(tn)r.tournament=tn.value.trim();
+  const t=document.getElementById('rTeam'),tn=document.getElementById('rTourn'),nt=document.getElementById('rNewTeam');
+  if(r.customTeam){if(nt)r.team=nt.value.trim();}        // custom name comes from the text input, not the select
+  else if(t&&t.value!=='__new__')r.team=t.value;
+  if(tn)r.tournament=tn.value.trim();
   const cap=document.getElementById('rCap'),wk=document.getElementById('rWk'),mgr=document.getElementById('rMgr');
   if(cap)r.captain=cap.value;if(wk)r.wk=wk.value;if(mgr)r.manager=mgr.value.trim();
 }
